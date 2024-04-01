@@ -1,0 +1,58 @@
+---
+
+- name: Ensure openhabcloud path exists
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0750"
+    owner: "{{ openhabcloud_uid }}"
+    group: "{{ openhabcloud_gid }}"
+  with_items:
+    - "{{ openhabcloud_base_path }}"
+    - "{{ openhabcloud_base_path }}/logs"
+
+- name: Ensure openhabcloud path is added as git safe directory
+  ansible.builtin.command: git config --global --add safe.directory {{ openhabcloud_base_path }}
+  check_mode: no
+
+- name: Checkout openhabcloud
+  ansible.builtin.git:
+    repo: "{{ openhabcloud_repository }}"
+    dest: "{{ openhabcloud_base_path }}"
+    version: "{{ openhabcloud_repository_branch }}"
+    single_branch: yes
+    force: yes
+
+- name: Change ownership
+  ansible.builtin.file:
+    dest: "{{ openhabcloud_base_path }}"
+    owner: "{{ openhabcloud_uid }}"
+    group: "{{ openhabcloud_gid }}"
+    recurse: yes
+
+- name: Ensure openhabcloud docker-composeand config.json files are created
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/{{ item }}.j2"
+    dest: "{{ openhabcloud_base_path }}/deployment/docker-compose/{{ item }}"
+    mode: "0640"
+    owner: "{{ openhabcloud_uid }}"
+    group: "{{ openhabcloud_gid }}"
+  with_items:
+    - docker-compose.yml
+    - config.json
+
+- name: Ensure openhabcloud docker image is build
+  ansible.builtin.command:
+    cmd: "{{ devture_systemd_docker_base_host_command_docker }} compose build"
+    chdir: "{{ openhabcloud_base_path }}/deployment/docker-compose"
+
+- name: Ensure openhabcloud container network is created
+  community.general.docker_network:
+    name: "{{ openhabcloud_container_network }}"
+    driver: bridge
+
+- name: Ensure openhabcloud systemd service installed
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/systemd/openhabcloud.service.j2"
+    dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ openhabcloud_identifier }}.service"
+    mode: "0644"

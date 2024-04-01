@@ -1,0 +1,25 @@
+---
+
+- name: Check existence of openhabcloud systemd service
+  ansible.builtin.stat:
+    path: "{{ devture_systemd_docker_base_systemd_path }}/{{ openhabcloud_identifier }}.service"
+  register: openhabcloud_service_stat
+
+- when: openhabcloud_service_stat.stat.exists | bool
+  block:
+    - name: Ensure openhabcloud is stopped
+      ansible.builtin.service:
+        name: "{{ openhabcloud_identifier }}"
+        state: stopped
+        enabled: false
+        daemon_reload: true
+
+    - name: Ensure openhabcloud systemd service doesn't exist
+      ansible.builtin.file:
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ openhabcloud_identifier }}"
+        state: absent
+
+    - name: Ensure openhabcloud base path doesn't exist
+      ansible.builtin.file:
+        path: "{{ openhabcloud_base_path }}"
+        state: absent

@@ -1,0 +1,33 @@
+#jinja2: lstrip_blocks: "True"
+[Unit]
+Description=openHAB Cloud ({{ openhabcloud_identifier }})
+{% for service in openhabcloud_systemd_required_services_list %}
+Requires={{ service }}
+After={{ service }}
+{% endfor %}
+{% for service in openhabcloud_systemd_wanted_services_list %}
+Wants={{ service }}
+{% endfor %}
+DefaultDependencies=no
+
+[Service]
+Type=simple
+WorkingDirectory={{ openhabcloud_base_path }}/deployment/docker-compose
+Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
+
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} compose pull --quiet --parallel
+
+ExecStart={{ devture_systemd_docker_base_host_command_docker }} compose up --remove-orphans
+ExecStop={{ devture_systemd_docker_base_host_command_docker }} compose down --remove-orphans
+
+ExecReload={{ devture_systemd_docker_base_host_command_docker }} compose pull --quiet --parallel
+ExecReload={{ devture_systemd_docker_base_host_command_docker }} compose up -d
+
+TimeoutStartSec=0
+
+Restart=always
+RestartSec=30
+SyslogIdentifier={{ openhabcloud_identifier }}
+
+[Install]
+WantedBy=multi-user.target
