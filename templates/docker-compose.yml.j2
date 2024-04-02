@@ -7,25 +7,26 @@ services:
     build:
       context: ../..
     volumes:
-    - ./config.json:/opt/openhabcloud/config.json
-    - {{ openhabcloud_base_path }}/logs:/opt/openhabcloud/logs
+      - ./config.json:/opt/openhabcloud/config.json
+    tmpfs:
+      - /opt/openhabcloud/logs:uid={{ openhabcloud_uid }},gid={{ openhabcloud_gid }}
     depends_on:
-    - mongodb
-    - redis
+      - mongodb
+      - redis
     restart: always
     environment:
-      NODE_ENV: production 
+      - NODE_ENV=production 
 
   mongodb:
     image: mongo:4
     volumes:
-    - mongo-data:/data/db
+      - mongo-data:/data/db
     restart: always
 
   redis:
     image: bitnami/redis:latest
     environment:
-    - REDIS_PASSWORD=123_openHAB
+      - REDIS_PASSWORD=123_openHAB
     restart: always
 
 volumes:
