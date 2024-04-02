@@ -2,7 +2,7 @@
 
 openhabcloud_enabled: true
 
-openhabcloud_identifier: openhabcloud
+openhabcloud_identifier: openhab-cloud
 
 openhabcloud_domain_name: ""
 openhabcloud_express_key: "some express key"
