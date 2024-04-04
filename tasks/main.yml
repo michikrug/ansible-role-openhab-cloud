@@ -6,15 +6,15 @@
     - install-all
     - install-openhabcloud
   block:
-    - when: openhabcloud_enabled | bool
+    - when: openhab_cloud_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
 
-    - when: openhabcloud_enabled | bool
+    - when: openhab_cloud_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
 
 - tags:
     - setup-all
     - setup-openhabcloud
   block:
-    - when: not openhabcloud_enabled | bool
+    - when: not openhab_cloud_enabled | bool
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"

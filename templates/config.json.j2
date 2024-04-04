@@ -1,6 +1,6 @@
 {
   "system": {
-    "host": "{{ openhabcloud_domain_name }}",
+    "host": "{{ openhab_cloud_domain_name }}",
     "listenIp": "0.0.0.0",
     "port": "443",
     "protocol": "https",
@@ -11,7 +11,7 @@
     "muteNotifications": false
   },
   "express":{
-    "key" : "{{ openhabcloud_express_key }}"
+    "key" : "{{ openhab_cloud_express_key }}"
   },
   "gcm": {
     "jid": "something@gcm.googleapis.com",
@@ -24,7 +24,7 @@
   "mail": {
     "host" : "smtp",
     "port" : 465,
-    "user" : "{{ openhabcloud_email_address }}",
+    "user" : "{{ openhab_cloud_email_address }}",
     "pass" : "password"
   },
   "mongodb": {
@@ -40,9 +40,9 @@
     "host" : "smtp",
     "port": 465,
     "secureConnection": true,
-    "user": "{{ openhabcloud_email_address }}",
+    "user": "{{ openhab_cloud_email_address }}",
     "password": "123_openHAB",
-    "from": "openHAB Cloud <{{ openhabcloud_email_address }}>"
+    "from": "openHAB Cloud <{{ openhab_cloud_email_address }}>"
   },
   "legal": {
     "terms" : "",
