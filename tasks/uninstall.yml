@@ -16,7 +16,7 @@
 
     - name: Ensure openHAB Cloud systemd service doesn't exist
       ansible.builtin.file:
-        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ openhab_cloud_identifier }}"
+        path: "{{ devture_systemd_docker_base_systemd_path }}/{{ openhab_cloud_identifier }}.service"
         state: absent
 
     - name: Ensure openhabcloud base path doesn't exist
