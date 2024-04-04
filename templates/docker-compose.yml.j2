@@ -3,9 +3,10 @@ version: '3'
 services:
   app:
     container_name: {{ openhab_cloud_identifier }}
-    user: {{ openhab_cloud_uid }}:{{ openhab_cloud_gid }}
+    image: {{ openhab_cloud_container_image }}
     build:
       context: ../..
+    user: {{ openhab_cloud_uid }}:{{ openhab_cloud_gid }}
     volumes:
       - {{ openhab_cloud_config_path }}/config.json:/opt/openhabcloud/config.json:readonly
     tmpfs:

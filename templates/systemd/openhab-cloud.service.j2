@@ -15,12 +15,12 @@ Type=simple
 WorkingDirectory={{ openhab_cloud_source_path }}/deployment/docker-compose
 Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
 
-ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} compose pull --quiet --parallel
+ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} compose pull --quiet --parallel --ignore-buildable
 
 ExecStart={{ devture_systemd_docker_base_host_command_docker }} compose up --remove-orphans
 ExecStop={{ devture_systemd_docker_base_host_command_docker }} compose down --remove-orphans
 
-ExecReload={{ devture_systemd_docker_base_host_command_docker }} compose pull --quiet --parallel
+ExecReload={{ devture_systemd_docker_base_host_command_docker }} compose pull --quiet --parallel --ignore-buildable
 ExecReload={{ devture_systemd_docker_base_host_command_docker }} compose up -d
 
 TimeoutStartSec=0

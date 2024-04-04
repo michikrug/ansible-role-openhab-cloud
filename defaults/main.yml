@@ -18,6 +18,8 @@ openhab_cloud_config_path: "{{ openhab_cloud_base_path }}/config"
 openhab_cloud_repository: "https://github.com/openhab/openhab-cloud.git"
 openhab_cloud_repository_branch: "main"
 
+openhab_cloud_container_image: "{{ openhab_cloud_identifier }}"
+
 # The base container network. It will be auto-created by this role if it doesn't exist already.
 openhab_cloud_container_network: "{{ openhab_cloud_identifier }}"
 

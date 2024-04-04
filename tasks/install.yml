@@ -47,10 +47,19 @@
     owner: "{{ openhab_cloud_uid }}"
     group: "{{ openhab_cloud_gid }}"
 
-- name: Ensure openHAB Cloud docker image is build
-  ansible.builtin.command:
-    cmd: "{{ devture_systemd_docker_base_host_command_docker }} compose build"
-    chdir: "{{ openhab_cloud_source_path }}/deployment/docker-compose"
+- name: Remove openHAB Cloud image
+  community.docker.docker_image:
+    name: "{{ openhab_cloud_container_image }}"
+    state: absent
+
+- name: Ensure openHAB Cloud image is build
+  community.docker.docker_image_build:
+    name: "{{ openhab_cloud_container_image }}"
+    path: "{{ openhab_cloud_source_path }}"
+  register: result
+  retries: "{{ devture_playbook_help_container_retries_count }}"
+  delay: "{{ devture_playbook_help_container_retries_delay }}"
+  until: result is not failed
 
 - name: Ensure openHAB Cloud container network is created
   community.general.docker_network:
