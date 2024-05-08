@@ -5,13 +5,13 @@
     "port": "443",
     "protocol": "https",
     "logger" : {
-      "type": "console"
+      "dir": "/opt/openhabcloud/logs/"
     },
     "subDomainCookies": false,
     "muteNotifications": false
   },
   "express":{
-    "key" : "{{ openhab_cloud_express_key }}"
+    "key" : "{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_letters', 'digits'], length=16) }}"
   },
   "gcm": {
     "jid": "something@gcm.googleapis.com",
@@ -29,19 +29,19 @@
   },
   "mongodb": {
     "hosts": ["mongodb"],
-    "db": "openhab"
+    "db": "openhab",
+    "user": "openhab",
+    "password": "openhab"
   },
   "redis": {
     "host": "redis",
-    "port": "6379",
-    "password": "123_openHAB"
+    "port": "6379"
   },
   "mailer": {
     "host" : "smtp",
     "port": 465,
     "secureConnection": true,
     "user": "{{ openhab_cloud_email_address }}",
-    "password": "123_openHAB",
     "from": "openHAB Cloud <{{ openhab_cloud_email_address }}>"
   },
   "legal": {

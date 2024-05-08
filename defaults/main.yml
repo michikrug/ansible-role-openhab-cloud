@@ -5,7 +5,6 @@ openhab_cloud_enabled: true
 openhab_cloud_identifier: openhab-cloud
 
 openhab_cloud_domain_name: ""
-openhab_cloud_express_key: "some express key"
 openhab_cloud_email_address: "my@openhab.org"
 
 openhab_cloud_uid: ""
@@ -14,6 +13,7 @@ openhab_cloud_gid: ""
 openhab_cloud_base_path: "{{ openhab_cloud_identifier }}"
 openhab_cloud_source_path: "{{ openhab_cloud_base_path }}/source"
 openhab_cloud_config_path: "{{ openhab_cloud_base_path }}/config"
+openhab_cloud_log_path: "{{ openhab_cloud_base_path }}/logs"
 
 openhab_cloud_repository: "https://github.com/openhab/openhab-cloud.git"
 openhab_cloud_repository_branch: "main"
@@ -23,8 +23,17 @@ openhab_cloud_container_image: "{{ openhab_cloud_identifier }}"
 # The base container network. It will be auto-created by this role if it doesn't exist already.
 openhab_cloud_container_network: "{{ openhab_cloud_identifier }}"
 
-# List of systemd services that the openhabcloud systemd service depends on
-openhab_cloud_systemd_required_services_list: ['docker.service']
+# A list of additional container networks that the container would be connected to.
+# The role does not create these networks, so make sure they already exist.
+openhab_cloud_container_additional_networks: "{{ openhab_cloud_container_additional_networks_auto + openhab_cloud_container_additional_networks_custom }}"
+openhab_cloud_container_additional_networks_auto: ['mongodb', 'redis']
+openhab_cloud_container_additional_networks_custom: []
 
-# List of systemd services that openhabcloud systemd service wants
+# A list of extra arguments to pass to the container
+openhab_cloud_container_extra_arguments: []
+
+# List of systemd services that the openhab-cloud systemd service depends on
+openhab_cloud_systemd_required_services_list: ['docker.service', 'mongodb.service', 'redis.service']
+
+# List of systemd services that openhab-cloud systemd service wants
 openhab_cloud_systemd_wanted_services_list: []

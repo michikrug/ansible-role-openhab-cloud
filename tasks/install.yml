@@ -11,6 +11,7 @@
     - "{{ openhab_cloud_base_path }}"
     - "{{ openhab_cloud_source_path }}"
     - "{{ openhab_cloud_config_path }}"
+    - "{{ openhab_cloud_log_path }}"
 
 - name: Ensure openHAB Cloud source path is added as git safe directory
   ansible.builtin.command: git config --global --add safe.directory {{ openhab_cloud_source_path }}
@@ -30,14 +31,6 @@
     owner: "{{ openhab_cloud_uid }}"
     group: "{{ openhab_cloud_gid }}"
     recurse: yes
-
-- name: Ensure openHAB Cloud docker-compose file is created
-  ansible.builtin.template:
-    src: "{{ role_path }}/templates/docker-compose.yml.j2"
-    dest: "{{ openhab_cloud_source_path }}/deployment/docker-compose/docker-compose.yml"
-    mode: "0644"
-    owner: "{{ openhab_cloud_uid }}"
-    group: "{{ openhab_cloud_gid }}"
 
 - name: Ensure openHAB Cloud config.json file is created
   ansible.builtin.template:
