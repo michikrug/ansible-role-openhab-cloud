@@ -23,6 +23,7 @@
     dest: "{{ openhab_cloud_source_path }}"
     version: "{{ openhab_cloud_repository_branch }}"
     single_branch: yes
+    depth: 1
     force: yes
 
 - name: Change openHAB Cloud source folder ownership
