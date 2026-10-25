@@ -13,8 +13,11 @@
     - "{{ openhab_cloud_log_path }}"
 
 - name: Ensure openHAB Cloud source path is added as git safe directory
-  ansible.builtin.command: git config --global --add safe.directory {{ openhab_cloud_source_path }}
-  check_mode: no
+  community.general.git_config:
+    scope: global
+    name: safe.directory
+    value: "{{ openhab_cloud_source_path }}"
+    add_mode: add
 
 - name: Checkout openHAB Cloud
   ansible.builtin.git:
