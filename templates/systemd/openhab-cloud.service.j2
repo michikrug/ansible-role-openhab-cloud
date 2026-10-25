@@ -24,7 +24,7 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
       --network={{ openhab_cloud_container_network }} \
       --mount type=bind,src={{ openhab_cloud_config_path }}/config.json,dst=/opt/openhabcloud/config.json,readonly \
       --mount type=bind,src={{ openhab_cloud_log_path }},dst=/opt/openhabcloud/logs \
-      --env NODE_ENV=production \
+      --env-file={{ openhab_cloud_base_path }}/env \
       {% for arg in openhab_cloud_container_extra_arguments %}
       {{ arg }} \
       {% endfor %}

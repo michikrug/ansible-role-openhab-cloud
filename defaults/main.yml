@@ -18,8 +18,12 @@ openhab_cloud_log_path: "{{ openhab_cloud_base_path }}/logs"
 openhab_cloud_repository: "https://github.com/openhab/openhab-cloud.git"
 openhab_cloud_repository_branch: "main"
 
-# The image is built locally from the checked-out source, so there is no registry prefix or tag to pull.
-openhab_cloud_container_image: "{{ openhab_cloud_identifier }}"
+# The image is built locally from the checked-out source. Every build is tagged with the checked-out commit, and
+# `openhab_cloud_container_image_tag` is a moving alias pointed at the newest build; the unit runs the alias.
+# Roll back with `docker tag {name}:<older commit> {name}:<alias tag>` and a service restart.
+openhab_cloud_container_image_name: "{{ openhab_cloud_identifier }}"
+openhab_cloud_container_image_tag: latest
+openhab_cloud_container_image: "{{ openhab_cloud_container_image_name }}:{{ openhab_cloud_container_image_tag }}"
 
 # The base container network. It will be auto-created by this role if it doesn't exist already.
 openhab_cloud_container_network: "{{ openhab_cloud_identifier }}"

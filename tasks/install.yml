@@ -27,6 +27,7 @@
     single_branch: true
     depth: 1
     force: true
+  register: openhab_cloud_checkout_result
 
 - name: Change openHAB Cloud source folder ownership
   ansible.builtin.file:
@@ -43,18 +44,42 @@
     mode: "0640"
     owner: "{{ openhab_cloud_uid }}"
     group: "{{ openhab_cloud_gid }}"
+  diff: false
+
+# All environment variables live in the env file read by `docker create --env-file`, none in the unit file.
+- name: Ensure openHAB Cloud env file is present
+  ansible.builtin.template:
+    src: "{{ role_path }}/templates/env.j2"
+    dest: "{{ openhab_cloud_base_path }}/env"
+    mode: "0640"
+    owner: "{{ openhab_cloud_uid }}"
+    group: "{{ openhab_cloud_gid }}"
+
+# Every build is tagged with the checked-out commit; `openhab_cloud_container_image_tag` is a moving alias on top of it.
+- name: Determine the openHAB Cloud image tag from the checked-out commit
+  ansible.builtin.set_fact:
+    openhab_cloud_build_tag: "{{ (openhab_cloud_checkout_result.after | default('unknown', true))[:12] }}"
 
 - name: Ensure openHAB Cloud image is built
   community.docker.docker_image_build:
-    name: "{{ openhab_cloud_container_image }}"
+    name: "{{ openhab_cloud_container_image_name }}"
+    tag: "{{ openhab_cloud_build_tag }}"
     path: "{{ openhab_cloud_source_path }}"
     # The default (`never`) skips the build when an image with this name exists, so a new checkout would never be built.
-    # Docker's layer cache keeps an unchanged source cheap; the previous image just becomes untagged.
+    # Docker's layer cache keeps an unchanged source cheap; older builds stay available under their commit tag.
     rebuild: always
   register: openhab_cloud_container_image_build_result
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
   until: openhab_cloud_container_image_build_result is not failed
+
+- name: Ensure the openHAB Cloud image alias points at the new build
+  community.docker.docker_image_tag:
+    name: "{{ openhab_cloud_container_image_name }}:{{ openhab_cloud_build_tag }}"
+    repository:
+      - "{{ openhab_cloud_container_image }}"
+  # The build only predicts in check mode, so the commit tag does not exist yet.
+  when: not ansible_check_mode
 
 - name: Ensure openHAB Cloud container network is created via community.docker.docker_network
   when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
