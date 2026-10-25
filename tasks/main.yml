@@ -1,20 +1,22 @@
 ---
-
-- tags:
+- name: Perform openHAB Cloud installation tasks
+  when: openhab_cloud_enabled | bool
+  tags:
     - setup-all
-    - setup-openhabcloud
+    - setup-openhab_cloud
     - install-all
-    - install-openhabcloud
+    - install-openhab_cloud
   block:
-    - when: openhab_cloud_enabled | bool
+    - name: Validate openHAB Cloud configuration
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/validate_config.yml"
-
-    - when: openhab_cloud_enabled | bool
+    - name: Install openHAB Cloud
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/install.yml"
 
-- tags:
+- name: Perform openHAB Cloud uninstallation tasks
+  when: not openhab_cloud_enabled | bool
+  tags:
     - setup-all
-    - setup-openhabcloud
+    - setup-openhab_cloud
   block:
-    - when: not openhab_cloud_enabled | bool
+    - name: Uninstall openHAB Cloud
       ansible.builtin.include_tasks: "{{ role_path }}/tasks/uninstall.yml"

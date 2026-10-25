@@ -10,7 +10,7 @@ openhab_cloud_email_address: "my@openhab.org"
 openhab_cloud_uid: ""
 openhab_cloud_gid: ""
 
-openhab_cloud_base_path: "{{ openhab_cloud_identifier }}"
+openhab_cloud_base_path: "/{{ openhab_cloud_identifier }}"
 openhab_cloud_source_path: "{{ openhab_cloud_base_path }}/source"
 openhab_cloud_config_path: "{{ openhab_cloud_base_path }}/config"
 openhab_cloud_log_path: "{{ openhab_cloud_base_path }}/logs"
@@ -18,10 +18,14 @@ openhab_cloud_log_path: "{{ openhab_cloud_base_path }}/logs"
 openhab_cloud_repository: "https://github.com/openhab/openhab-cloud.git"
 openhab_cloud_repository_branch: "main"
 
+# The image is built locally from the checked-out source, so there is no registry prefix or tag to pull.
 openhab_cloud_container_image: "{{ openhab_cloud_identifier }}"
 
 # The base container network. It will be auto-created by this role if it doesn't exist already.
 openhab_cloud_container_network: "{{ openhab_cloud_identifier }}"
+
+# Control if the container network is deleted on uninstalling.
+openhab_cloud_container_network_deletion_enabled: true
 
 # A list of additional container networks that the container would be connected to.
 # The role does not create these networks, so make sure they already exist.
@@ -29,14 +33,63 @@ openhab_cloud_container_additional_networks: "{{ openhab_cloud_container_additio
 openhab_cloud_container_additional_networks_auto: ['mongodb', 'redis']
 openhab_cloud_container_additional_networks_custom: []
 
-# A list of extra arguments to pass to the container
-openhab_cloud_container_extra_arguments: []
+# A list of extra arguments to pass to the container (`docker create` command)
+openhab_cloud_container_extra_arguments: "{{ openhab_cloud_container_extra_arguments_auto + openhab_cloud_container_extra_arguments_custom }}"
+openhab_cloud_container_extra_arguments_auto: []
+openhab_cloud_container_extra_arguments_custom: []
 
-# List of systemd services that the openhab-cloud systemd service depends on
+# A list of extra arguments to pass to the process inside the container
+# Example: ['--SOME_ARGUMENT']
+openhab_cloud_process_extra_arguments: "{{ openhab_cloud_process_extra_arguments_auto + openhab_cloud_process_extra_arguments_custom }}"
+openhab_cloud_process_extra_arguments_auto: []
+openhab_cloud_process_extra_arguments_custom: []
+
+# List of systemd services that the openHAB Cloud systemd service depends on
 openhab_cloud_systemd_required_services_list: "{{ openhab_cloud_systemd_required_services_list_default + openhab_cloud_systemd_required_services_list_auto + openhab_cloud_systemd_required_services_list_custom }}"
 openhab_cloud_systemd_required_services_list_default: "{{ [devture_systemd_docker_base_docker_service_name] if devture_systemd_docker_base_docker_service_name else [] }}"
 openhab_cloud_systemd_required_services_list_auto: ['mongodb.service', 'redis.service']
 openhab_cloud_systemd_required_services_list_custom: []
 
-# List of systemd services that openhab-cloud systemd service wants
-openhab_cloud_systemd_wanted_services_list: []
+# List of systemd services that the openHAB Cloud systemd service wants
+openhab_cloud_systemd_wanted_services_list: "{{ openhab_cloud_systemd_wanted_services_list_default + openhab_cloud_systemd_wanted_services_list_auto + openhab_cloud_systemd_wanted_services_list_custom }}"
+openhab_cloud_systemd_wanted_services_list_default: []
+openhab_cloud_systemd_wanted_services_list_auto: []
+openhab_cloud_systemd_wanted_services_list_custom: []
+
+# Whether the role enables the openHAB Cloud systemd service on boot. `false` leaves the current state untouched.
+openhab_cloud_systemd_service_enabled: false
+
+# Whether the role starts the openHAB Cloud systemd service if it is stopped. It never restarts a running service.
+# `false` leaves the current state untouched.
+openhab_cloud_systemd_service_started: false
+
+# Controls how long to wait for the container to stop gracefully before killing it.
+openhab_cloud_container_stop_grace_time_seconds: "{{ devture_systemd_docker_base_container_stop_grace_time_seconds }}"
+
+# Controls how long the pre-start cleanup should wait for stale container-name release
+# before failing startup explicitly.
+openhab_cloud_container_cleanup_timeout_seconds: "{{ devture_systemd_docker_base_container_cleanup_timeout_seconds }}"
+
+# Controls the delay between pre-start cleanup retries.
+openhab_cloud_container_cleanup_retry_delay_seconds: "{{ devture_systemd_docker_base_container_cleanup_retry_delay_seconds }}"
+
+# Shell command used in the systemd pre-start phase to deterministically remove a stale
+# container and wait until Docker releases its name.
+openhab_cloud_container_cleanup_command: |
+  i=0;
+  while [ "$i" -lt {{ openhab_cloud_container_cleanup_timeout_seconds }} ]; do
+  {{ devture_systemd_docker_base_host_command_docker }} stop -t {{ openhab_cloud_container_stop_grace_time_seconds }} {{ openhab_cloud_identifier }} >/dev/null 2>&1 || true;
+  {{ devture_systemd_docker_base_host_command_docker }} rm -f {{ openhab_cloud_identifier }} >/dev/null 2>&1 || true;
+  if {{ devture_systemd_docker_base_host_command_docker }} container inspect {{ openhab_cloud_identifier }} >/dev/null 2>&1; then
+  i=$((i + 1));
+  sleep {{ openhab_cloud_container_cleanup_retry_delay_seconds }};
+  continue;
+  fi;
+  if {{ devture_systemd_docker_base_host_command_docker }} info >/dev/null 2>&1; then
+  exit 0;
+  fi;
+  echo "Failed to query Docker daemon while cleaning up {{ openhab_cloud_identifier }}" >&2;
+  exit 1;
+  done;
+  echo "Failed to remove stale container {{ openhab_cloud_identifier }} after {{ openhab_cloud_container_cleanup_timeout_seconds }} attempts" >&2;
+  exit 1

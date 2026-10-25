@@ -1,4 +1,3 @@
-#jinja2: lstrip_blocks: "True"
 [Unit]
 Description=openHAB Cloud ({{ openhab_cloud_identifier }})
 {% for service in openhab_cloud_systemd_required_services_list %}
@@ -13,24 +12,26 @@ DefaultDependencies=no
 [Service]
 Type=simple
 Environment="HOME={{ devture_systemd_docker_base_systemd_unit_home_path }}"
-ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop --timeout={{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ openhab_cloud_identifier }} 2>/dev/null || true'
-ExecStartPre=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ openhab_cloud_identifier }} 2>/dev/null || true'
+ExecStartPre={{ devture_systemd_docker_base_host_command_sh }} -c '{{ openhab_cloud_container_cleanup_command | trim | replace("\n", " ") }}'
 
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} create \
-			--rm \
-			--name={{ openhab_cloud_identifier }} \
-			--log-driver=none \
-			--user={{ openhab_cloud_uid }}:{{ openhab_cloud_gid }} \
-			--cap-drop=ALL \
-			--read-only \
-			--network={{ openhab_cloud_container_network }} \
-			--mount type=bind,src={{ openhab_cloud_config_path }}/config.json,dst=/opt/openhabcloud/config.json,readonly \
-			--mount type=bind,src={{ openhab_cloud_log_path }},dst=/opt/openhabcloud/logs \
-			--env NODE_ENV=production \
-			{% for arg in openhab_cloud_container_extra_arguments %}
-			{{ arg }} \
-			{% endfor %}
-			{{ openhab_cloud_container_image }}
+      --rm \
+      --name={{ openhab_cloud_identifier }} \
+      --log-driver=none \
+      --user={{ openhab_cloud_uid }}:{{ openhab_cloud_gid }} \
+      --cap-drop=ALL \
+      --read-only \
+      --network={{ openhab_cloud_container_network }} \
+      --mount type=bind,src={{ openhab_cloud_config_path }}/config.json,dst=/opt/openhabcloud/config.json,readonly \
+      --mount type=bind,src={{ openhab_cloud_log_path }},dst=/opt/openhabcloud/logs \
+      --env NODE_ENV=production \
+      {% for arg in openhab_cloud_container_extra_arguments %}
+      {{ arg }} \
+      {% endfor %}
+      {{ openhab_cloud_container_image }} \
+      {% for arg in openhab_cloud_process_extra_arguments %}
+      {{ arg }} \
+      {% endfor %}
 
 {% for network in openhab_cloud_container_additional_networks %}
 ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network connect {{ network }} {{ openhab_cloud_identifier }}
@@ -38,7 +39,7 @@ ExecStartPre={{ devture_systemd_docker_base_host_command_docker }} network conne
 
 ExecStart={{ devture_systemd_docker_base_host_command_docker }} start --attach {{ openhab_cloud_identifier }}
 
-ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop --timeout={{ devture_systemd_docker_base_container_stop_grace_time_seconds }} {{ openhab_cloud_identifier }} 2>/dev/null || true'
+ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} stop -t {{ openhab_cloud_container_stop_grace_time_seconds }} {{ openhab_cloud_identifier }} 2>/dev/null || true'
 ExecStop=-{{ devture_systemd_docker_base_host_command_sh }} -c '{{ devture_systemd_docker_base_host_command_docker }} rm {{ openhab_cloud_identifier }} 2>/dev/null || true'
 
 Restart=always

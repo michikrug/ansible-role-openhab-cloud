@@ -1,5 +1,4 @@
 ---
-
 - name: Ensure openHAB Cloud paths exist
   ansible.builtin.file:
     path: "{{ item }}"
@@ -22,47 +21,81 @@
     repo: "{{ openhab_cloud_repository }}"
     dest: "{{ openhab_cloud_source_path }}"
     version: "{{ openhab_cloud_repository_branch }}"
-    single_branch: yes
+    single_branch: true
     depth: 1
-    force: yes
+    force: true
 
 - name: Change openHAB Cloud source folder ownership
   ansible.builtin.file:
     dest: "{{ openhab_cloud_source_path }}"
     owner: "{{ openhab_cloud_uid }}"
     group: "{{ openhab_cloud_gid }}"
-    recurse: yes
+    recurse: true
 
+# 0640: the file holds database credentials and the container runs as the same uid/gid.
 - name: Ensure openHAB Cloud config.json file is created
   ansible.builtin.template:
     src: "{{ role_path }}/templates/config.json.j2"
     dest: "{{ openhab_cloud_config_path }}/config.json"
-    mode: "0644"
+    mode: "0640"
     owner: "{{ openhab_cloud_uid }}"
     group: "{{ openhab_cloud_gid }}"
 
-- name: Remove openHAB Cloud image
-  community.docker.docker_image:
-    name: "{{ openhab_cloud_container_image }}"
-    state: absent
-
-- name: Ensure openHAB Cloud image is build
+- name: Ensure openHAB Cloud image is built
   community.docker.docker_image_build:
     name: "{{ openhab_cloud_container_image }}"
     path: "{{ openhab_cloud_source_path }}"
-  register: result
+    # The default (`never`) skips the build when an image with this name exists, so a new checkout would never be built.
+    # Docker's layer cache keeps an unchanged source cheap; the previous image just becomes untagged.
+    rebuild: always
+  register: openhab_cloud_container_image_build_result
   retries: "{{ devture_playbook_help_container_retries_count }}"
   delay: "{{ devture_playbook_help_container_retries_delay }}"
-  until: result is not failed
+  until: openhab_cloud_container_image_build_result is not failed
 
-- name: Ensure openHAB Cloud container network is created
+- name: Ensure openHAB Cloud container network is created via community.docker.docker_network
+  when: devture_systemd_docker_base_container_network_creation_method == 'ansible-module'
   community.docker.docker_network:
+    enable_ipv6: "{{ devture_systemd_docker_base_ipv6_enabled }}"
     name: "{{ openhab_cloud_container_network }}"
     driver: bridge
     driver_options: "{{ devture_systemd_docker_base_container_networks_driver_options }}"
+  register: openhab_cloud_network_creation_result
 
-- name: Ensure openHAB Cloud systemd service installed
+- name: Ensure openHAB Cloud container network is created via ansible.builtin.command
+  when: devture_systemd_docker_base_container_network_creation_method == 'command'
+  ansible.builtin.command:
+    cmd: >-
+      {{ devture_systemd_docker_base_host_command_docker }} network create
+      {% if devture_systemd_docker_base_ipv6_enabled %}--ipv6{% endif %}
+      {{ devture_systemd_docker_base_container_networks_driver_options_string }}
+      {{ openhab_cloud_container_network }}
+  register: openhab_cloud_network_creation_result
+  changed_when: openhab_cloud_network_creation_result.rc == 0
+  failed_when: openhab_cloud_network_creation_result.rc != 0 and 'already exists' not in openhab_cloud_network_creation_result.stderr
+
+- name: Ensure openHAB Cloud systemd service is present
   ansible.builtin.template:
-    src: "{{ role_path }}/templates/systemd/openhab-cloud.service.j2"
+    src: "{{ role_path }}/templates/systemd/openhab_cloud.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ openhab_cloud_identifier }}.service"
     mode: "0644"
+  register: openhab_cloud_systemd_service_result
+
+# The role only sets the service up; the flags below opt in to enabling/starting it. It never restarts.
+# The reload makes a manual (re)start pick up a changed unit file.
+- name: Ensure systemd knows about the openHAB Cloud unit file  # noqa no-handler
+  when: openhab_cloud_systemd_service_result.changed | bool
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Ensure openHAB Cloud systemd service is enabled
+  when: openhab_cloud_systemd_service_enabled | bool
+  ansible.builtin.service:
+    name: "{{ openhab_cloud_identifier }}"
+    enabled: true
+
+- name: Ensure openHAB Cloud systemd service is started
+  when: openhab_cloud_systemd_service_started | bool
+  ansible.builtin.service:
+    name: "{{ openhab_cloud_identifier }}"
+    state: started
