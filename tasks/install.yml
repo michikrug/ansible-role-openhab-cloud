@@ -79,7 +79,7 @@
 
 - name: Ensure openHAB Cloud systemd service is present
   ansible.builtin.template:
-    src: "{{ role_path }}/templates/systemd/openhab_cloud.service.j2"
+    src: "{{ role_path }}/templates/systemd/openhab-cloud.service.j2"
     dest: "{{ devture_systemd_docker_base_systemd_path }}/{{ openhab_cloud_identifier }}.service"
     mode: "0644"
   register: openhab_cloud_systemd_service_result
